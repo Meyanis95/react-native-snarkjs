@@ -36,7 +36,9 @@ export async function getCurveFromName(name) {
     let curve;
     const normName = normalizeName(name);
     if (["BN128", "BN254", "ALTBN128"].indexOf(normName) >= 0) {
-        curve = await buildBn128();
+         // use a single thread for now as temp workaround
+
+        curve = await buildBn128(true);
     } else if (["BLS12381"].indexOf(normName) >= 0) {
         curve = await buildBls12381();
     } else {
