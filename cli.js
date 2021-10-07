@@ -30,7 +30,7 @@ import clProcessor from "./src/clprocessor.js";
 
 import * as powersOfTau from "./src/powersoftau.js";
 
-import {  utils }   from "ffjavascript";
+import {  utils }   from "react-native-ffjavascript";
 const {stringifyBigInts, unstringifyBigInts} = utils;
 
 import * as zkey from "./src/zkey.js";

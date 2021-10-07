@@ -20,7 +20,7 @@
 import * as binFileUtils from "@iden3/binfileutils";
 import * as zkeyUtils from "./zkey_utils.js";
 import { getCurveFromQ as getCurve } from "./curves.js";
-import { utils } from "ffjavascript";
+import { utils } from "react-native-ffjavascript";
 const {stringifyBigInts} = utils;
 
 export default async function zkeyExportVerificationKey(zkeyName, /* logger */ ) {

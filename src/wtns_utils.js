@@ -17,7 +17,7 @@
     along with snarkJS. If not, see <https://www.gnu.org/licenses/>.
 */
 
-import { Scalar } from "ffjavascript";
+import { Scalar } from "react-native-ffjavascript";
 
 import * as binFileUtils from "@iden3/binfileutils";
 

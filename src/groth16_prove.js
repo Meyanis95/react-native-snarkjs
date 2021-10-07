@@ -22,7 +22,7 @@ import * as zkeyUtils from "./zkey_utils.js";
 import * as wtnsUtils from "./wtns_utils.js";
 import { getCurveFromQ as getCurve } from "./curves.js";
 import { log2 } from "./misc.js";
-import { Scalar, utils, BigBuffer } from "ffjavascript";
+import { Scalar, utils, BigBuffer } from "react-native-ffjavascript";
 const {stringifyBigInts} = utils;
 
 export default async function groth16Prove(zkeyFileName, witnessFileName, logger) {
@@ -30,7 +30,23 @@ export default async function groth16Prove(zkeyFileName, witnessFileName, logger
 
     const wtns = await wtnsUtils.readHeader(fdWtns, sectionsWtns);
 
-    const {fd: fdZKey, sections: sectionsZKey} = await binFileUtils.readBinFile(zkeyFileName, "zkey", 2, 1<<25, 1<<23);
+
+    const zkBuff = await get(zkeyFileName).then( function(res) {
+        console.log(res);
+        return res
+    }).then(function (ab) {
+        return new Uint8Array(ab);
+    }).catch(err => {
+        console.log("err wtnsCalculate")
+        console.log(err)
+    });
+    const zkFile = {
+        type: "mem",
+        data: zkBuff
+    };
+
+
+    const {fd: fdZKey, sections: sectionsZKey} = await binFileUtils.readBinFile(zkFile, "zkey", 2, 1<<25, 1<<23);
 
     const zkey = await zkeyUtils.readHeader(fdZKey, sectionsZKey);
 
@@ -143,7 +159,22 @@ export default async function groth16Prove(zkeyFileName, witnessFileName, logger
     return {proof, publicSignals};
 }
 
+export function get(url) {
+    return new Promise((accept, reject) => {
+        var req = new XMLHttpRequest();
+        req.open("GET", url, true);
+        req.responseType = "arraybuffer";
 
+        req.onload = function(event) {
+            var resp = req.response;
+            if(resp) {
+                accept(resp);
+            }
+        };
+
+        req.send(null);
+    });
+}
 async function buldABC1(curve, zkey, witness, coeffs, logger) {
     const n8 = curve.Fr.n8;
     const sCoef = 4*3 + zkey.n8r;
@@ -372,4 +403,3 @@ async function joinABC(curve, zkey, a, b, c, logger) {
 
     return outBuff;
 }
-

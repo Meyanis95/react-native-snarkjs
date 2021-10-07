@@ -18,9 +18,9 @@
 */
 
 /* Implementation of this paper: https://eprint.iacr.org/2019/953.pdf */
-import { Scalar } from "ffjavascript";
+import { Scalar } from "react-native-ffjavascript";
 import * as curves from "./curves.js";
-import {  utils }   from "ffjavascript";
+import {  utils }   from "react-native-ffjavascript";
 const {unstringifyBigInts} = utils;
 import jsSha3 from "js-sha3";
 const { keccak256 } = jsSha3;

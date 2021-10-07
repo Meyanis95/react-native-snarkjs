@@ -23,7 +23,7 @@ import * as binFileUtils from "@iden3/binfileutils";
 import * as zkeyUtils from "./zkey_utils.js";
 import * as wtnsUtils from "./wtns_utils.js";
 import { getCurveFromQ as getCurve } from "./curves.js";
-import { Scalar, utils, BigBuffer } from "ffjavascript";
+import { Scalar, utils, BigBuffer } from "react-native-ffjavascript";
 const {stringifyBigInts} = utils;
 import jsSha3 from "js-sha3";
 const { keccak256 } = jsSha3;

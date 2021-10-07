@@ -22,7 +22,7 @@ import * as utils from "./powersoftau_utils.js";
 import * as keyPair from "./keypair.js";
 import crypto from "crypto";
 import * as binFileUtils from "@iden3/binfileutils";
-import { ChaCha, BigBuffer } from "ffjavascript";
+import { ChaCha, BigBuffer } from "react-native-ffjavascript";
 import * as misc from "./misc.js";
 const sameRatio = misc.sameRatio;
 

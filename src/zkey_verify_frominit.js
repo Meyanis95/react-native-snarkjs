@@ -26,7 +26,7 @@ import { hashToG2 as hashToG2 } from "./keypair.js";
 const sameRatio = misc.sameRatio;
 import crypto from "crypto";
 import {hashG1, hashPubKey} from "./zkey_utils.js";
-import { Scalar, ChaCha, BigBuffer } from "ffjavascript";
+import { Scalar, ChaCha, BigBuffer } from "react-native-ffjavascript";
 
 
 

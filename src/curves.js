@@ -1,4 +1,4 @@
-import { Scalar, buildBn128, buildBls12381} from "ffjavascript";
+import { Scalar, buildBn128, buildBls12381} from "react-native-ffjavascript";
 
 const bls12381r = Scalar.e("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", 16);
 const bn128r = Scalar.e("21888242871839275222246405745257275088548364400416034343698204186575808495617");
@@ -19,9 +19,11 @@ export async function getCurveFromR(r) {
 }
 
 export async function getCurveFromQ(q) {
+
+    // use a single thread for now as temp workaround
     let curve;
     if (Scalar.eq(q, bn128q)) {
-        curve = await buildBn128();
+        curve = await buildBn128(true);
     } else if (Scalar.eq(q, bls12381q)) {
         curve = await buildBls12381();
     } else {

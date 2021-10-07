@@ -1,7 +1,7 @@
 import assert from "assert";
 import { getCurveFromName } from "../src/curves.js";
 import { hex2ByteArray } from "../src/misc.js";
-import { Scalar } from "ffjavascript";
+import { Scalar } from "react-native-ffjavascript";
 
 import { getG2sp } from "../src/keypair.js";
 

@@ -18,9 +18,9 @@
 */
 
 /* Implementation of this paper: https://eprint.iacr.org/2016/260.pdf */
-import { Scalar } from "ffjavascript";
+import { Scalar } from "react-native-ffjavascript";
 import * as curves from "./curves.js";
-import {  utils }   from "ffjavascript";
+import {  utils }   from "react-native-ffjavascript";
 const {unstringifyBigInts} = utils;
 
 export default async function groth16Verify(vk_verifier, publicSignals, proof, logger) {

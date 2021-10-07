@@ -20,7 +20,7 @@
 import * as binFileUtils from "@iden3/binfileutils";
 import * as utils from "./powersoftau_utils.js";
 import * as fastFile from "fastfile";
-import {BigBuffer} from "ffjavascript";
+import {BigBuffer} from "react-native-ffjavascript";
 
 export default async function convert(oldPtauFilename, newPTauFilename, logger) {
 
