@@ -3,12 +3,12 @@
 Object.defineProperty(exports, '__esModule', { value: true });
 
 var binFileUtils = require('@iden3/binfileutils');
-var ffjavascript = require('ffjavascript');
+var reactNativeFfjavascript = require('react-native-ffjavascript');
 var Blake2b = require('blake2b-wasm');
 var readline = require('readline');
 var crypto = require('crypto');
 var fastFile = require('fastfile');
-var circom_runtime = require('circom_runtime');
+var reactNativeCircom_runtime = require('react-native-circom_runtime');
 var r1csfile = require('r1csfile');
 var ejs = require('ejs');
 var jsSha3 = require('js-sha3');
@@ -21,20 +21,22 @@ var crypto__default = /*#__PURE__*/_interopDefaultLegacy(crypto);
 var ejs__default = /*#__PURE__*/_interopDefaultLegacy(ejs);
 var jsSha3__default = /*#__PURE__*/_interopDefaultLegacy(jsSha3);
 
-const bls12381r = ffjavascript.Scalar.e("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", 16);
-const bn128r = ffjavascript.Scalar.e("21888242871839275222246405745257275088548364400416034343698204186575808495617");
+const bls12381r = reactNativeFfjavascript.Scalar.e("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", 16);
+const bn128r = reactNativeFfjavascript.Scalar.e("21888242871839275222246405745257275088548364400416034343698204186575808495617");
 
-const bls12381q = ffjavascript.Scalar.e("1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab", 16);
-const bn128q = ffjavascript.Scalar.e("21888242871839275222246405745257275088696311157297823662689037894645226208583");
+const bls12381q = reactNativeFfjavascript.Scalar.e("1a0111ea397fe69a4b1ba7b6434bacd764774b84f38512bf6730d2a0f6b0f6241eabfffeb153ffffb9feffffffffaaab", 16);
+const bn128q = reactNativeFfjavascript.Scalar.e("21888242871839275222246405745257275088696311157297823662689037894645226208583");
 
 async function getCurveFromQ(q) {
+
+    // use a single thread for now as temp workaround
     let curve;
-    if (ffjavascript.Scalar.eq(q, bn128q)) {
-        curve = await ffjavascript.buildBn128();
-    } else if (ffjavascript.Scalar.eq(q, bls12381q)) {
-        curve = await ffjavascript.buildBls12381();
+    if (reactNativeFfjavascript.Scalar.eq(q, bn128q)) {
+        curve = await reactNativeFfjavascript.buildBn128(true);
+    } else if (reactNativeFfjavascript.Scalar.eq(q, bls12381q)) {
+        curve = await reactNativeFfjavascript.buildBls12381();
     } else {
-        throw new Error(`Curve not supported: ${ffjavascript.Scalar.toString(q)}`);
+        throw new Error(`Curve not supported: ${reactNativeFfjavascript.Scalar.toString(q)}`);
     }
     return curve;
 }
@@ -43,9 +45,9 @@ async function getCurveFromName(name) {
     let curve;
     const normName = normalizeName(name);
     if (["BN128", "BN254", "ALTBN128"].indexOf(normName) >= 0) {
-        curve = await ffjavascript.buildBn128();
+        curve = await reactNativeFfjavascript.buildBn128();
     } else if (["BLS12381"].indexOf(normName) >= 0) {
-        curve = await ffjavascript.buildBls12381();
+        curve = await reactNativeFfjavascript.buildBls12381();
     } else {
         throw new Error(`Curve not supported: ${name}`);
     }
@@ -173,7 +175,7 @@ async function getRandomRng(entropy) {
     for (let i=0;i<8;i++) {
         seed[i] = hash.readUInt32BE(i*4);
     }
-    const rng = new ffjavascript.ChaCha(seed);
+    const rng = new reactNativeFfjavascript.ChaCha(seed);
     return rng;
 }
 
@@ -201,7 +203,7 @@ function rngFromBeaconParams(beaconHash, numIterationsExp) {
         seed[i] = curHashV.getUint32(i*4, false);
     }
 
-    const rng = new ffjavascript.ChaCha(seed);
+    const rng = new reactNativeFfjavascript.ChaCha(seed);
 
     return rng;
 }
@@ -254,10 +256,10 @@ async function writeHeader(fd, zkey) {
 
     await binFileUtils.startWriteSection(fd, 2);
     const primeQ = curve.q;
-    const n8q = (Math.floor( (ffjavascript.Scalar.bitLength(primeQ) - 1) / 64) +1)*8;
+    const n8q = (Math.floor( (reactNativeFfjavascript.Scalar.bitLength(primeQ) - 1) / 64) +1)*8;
 
     const primeR = curve.r;
-    const n8r = (Math.floor( (ffjavascript.Scalar.bitLength(primeR) - 1) / 64) +1)*8;
+    const n8r = (Math.floor( (reactNativeFfjavascript.Scalar.bitLength(primeR) - 1) / 64) +1)*8;
 
     await fd.writeULE32(n8q);
     await binFileUtils.writeBigInt(fd, primeQ, n8q);
@@ -406,8 +408,8 @@ async function readZKey(fileName, toObject) {
 
     const zkey = await readHeader(fd, sections, "groth16");
 
-    const Fr = new ffjavascript.F1Field(zkey.r);
-    const Rr = ffjavascript.Scalar.mod(ffjavascript.Scalar.shl(1, zkey.n8r*8), zkey.r);
+    const Fr = new reactNativeFfjavascript.F1Field(zkey.r);
+    const Rr = reactNativeFfjavascript.Scalar.mod(reactNativeFfjavascript.Scalar.shl(1, zkey.n8r*8), zkey.r);
     const Rri = Fr.inv(Rr);
     const Rri2 = Fr.mul(Rri, Rri);
 
@@ -649,7 +651,7 @@ function hashPubKey(hasher, curve, c) {
 async function write(fd, witness, prime) {
 
     await binFileUtils.startWriteSection(fd, 1);
-    const n8 = (Math.floor( (ffjavascript.Scalar.bitLength(prime) - 1) / 64) +1)*8;
+    const n8 = (Math.floor( (reactNativeFfjavascript.Scalar.bitLength(prime) - 1) / 64) +1)*8;
     await fd.writeULE32(n8);
     await binFileUtils.writeBigInt(fd, prime, n8);
     await fd.writeULE32(witness.length);
@@ -667,7 +669,7 @@ async function write(fd, witness, prime) {
 async function writeBin(fd, witnessBin, prime) {
 
     await binFileUtils.startWriteSection(fd, 1);
-    const n8 = (Math.floor( (ffjavascript.Scalar.bitLength(prime) - 1) / 64) +1)*8;
+    const n8 = (Math.floor( (reactNativeFfjavascript.Scalar.bitLength(prime) - 1) / 64) +1)*8;
     await fd.writeULE32(n8);
     await binFileUtils.writeBigInt(fd, prime, n8);
     if (witnessBin.byteLength % n8 != 0) {
@@ -732,14 +734,30 @@ async function read(fileName) {
     You should have received a copy of the GNU General Public License
     along with snarkJS. If not, see <https://www.gnu.org/licenses/>.
 */
-const {stringifyBigInts} = ffjavascript.utils;
+const {stringifyBigInts} = reactNativeFfjavascript.utils;
 
 async function groth16Prove(zkeyFileName, witnessFileName, logger) {
     const {fd: fdWtns, sections: sectionsWtns} = await binFileUtils.readBinFile(witnessFileName, "wtns", 2, 1<<25, 1<<23);
 
     const wtns = await readHeader$1(fdWtns, sectionsWtns);
 
-    const {fd: fdZKey, sections: sectionsZKey} = await binFileUtils.readBinFile(zkeyFileName, "zkey", 2, 1<<25, 1<<23);
+
+    const zkBuff = await get(zkeyFileName).then( function(res) {
+        console.log(res);
+        return res
+    }).then(function (ab) {
+        return new Uint8Array(ab);
+    }).catch(err => {
+        console.log("err wtnsCalculate");
+        console.log(err);
+    });
+    const zkFile = {
+        type: "mem",
+        data: zkBuff
+    };
+
+
+    const {fd: fdZKey, sections: sectionsZKey} = await binFileUtils.readBinFile(zkFile, "zkey", 2, 1<<25, 1<<23);
 
     const zkey = await readHeader(fdZKey, sectionsZKey);
 
@@ -747,7 +765,7 @@ async function groth16Prove(zkeyFileName, witnessFileName, logger) {
         throw new Error("zkey file is not groth16");
     }
 
-    if (!ffjavascript.Scalar.eq(zkey.r,  wtns.q)) {
+    if (!reactNativeFfjavascript.Scalar.eq(zkey.r,  wtns.q)) {
         throw new Error("Curve of the witness does not match the curve of the proving key");
     }
 
@@ -833,7 +851,7 @@ async function groth16Prove(zkeyFileName, witnessFileName, logger) {
 
     for (let i=1; i<= zkey.nPublic; i++) {
         const b = buffWitness.slice(i*Fr.n8, i*Fr.n8+Fr.n8);
-        publicSignals.push(ffjavascript.Scalar.fromRprLE(b));
+        publicSignals.push(reactNativeFfjavascript.Scalar.fromRprLE(b));
     }
 
     proof.pi_a = G1.toObject(G1.toAffine(proof.pi_a));
@@ -852,15 +870,30 @@ async function groth16Prove(zkeyFileName, witnessFileName, logger) {
     return {proof, publicSignals};
 }
 
+function get(url) {
+    return new Promise((accept, reject) => {
+        var req = new XMLHttpRequest();
+        req.open("GET", url, true);
+        req.responseType = "arraybuffer";
 
+        req.onload = function(event) {
+            var resp = req.response;
+            if(resp) {
+                accept(resp);
+            }
+        };
+
+        req.send(null);
+    });
+}
 async function buldABC1(curve, zkey, witness, coeffs, logger) {
     const n8 = curve.Fr.n8;
     const sCoef = 4*3 + zkey.n8r;
     const nCoef = (coeffs.byteLength-4) / sCoef;
 
-    const outBuffA = new ffjavascript.BigBuffer(zkey.domainSize * n8);
-    const outBuffB = new ffjavascript.BigBuffer(zkey.domainSize * n8);
-    const outBuffC = new ffjavascript.BigBuffer(zkey.domainSize * n8);
+    const outBuffA = new reactNativeFfjavascript.BigBuffer(zkey.domainSize * n8);
+    const outBuffB = new reactNativeFfjavascript.BigBuffer(zkey.domainSize * n8);
+    const outBuffC = new reactNativeFfjavascript.BigBuffer(zkey.domainSize * n8);
 
     const outBuf = [ outBuffA, outBuffB ];
     for (let i=0; i<nCoef; i++) {
@@ -1067,8 +1100,8 @@ async function joinABC(curve, zkey, a, b, c, logger) {
     const result = await Promise.all(promises);
 
     let outBuff;
-    if (a instanceof ffjavascript.BigBuffer) {
-        outBuff = new ffjavascript.BigBuffer(a.byteLength);
+    if (a instanceof reactNativeFfjavascript.BigBuffer) {
+        outBuff = new reactNativeFfjavascript.BigBuffer(a.byteLength);
     } else {
         outBuff = new Uint8Array(a.byteLength);
     }
@@ -1103,11 +1136,27 @@ async function joinABC(curve, zkey, a, b, c, logger) {
 
 async function wtnsCalculate(input, wasmFileName, wtnsFileName, options) {
 
-    const fdWasm = await fastFile.readExisting(wasmFileName);
-    const wasm = await fdWasm.read(fdWasm.totalSize);
-    await fdWasm.close();
 
-    const wc = await circom_runtime.WitnessCalculatorBuilder(wasm);
+    console.log("wtnsCalculate");
+
+    const wasmFileBuff = await get$1(wasmFileName).then( function(res) {
+        return res
+    }).then(function (ab) {
+        return new Uint8Array(ab);
+    }).catch(err => {
+        console.log("err wtnsCalculate");
+        console.log(err);
+    });
+    const o = {
+        type: "mem",
+        data: wasmFileBuff
+    };
+    const fdWasm = await fastFile.readExisting(o);
+    const wasm = await fdWasm.read(fdWasm.totalSize);
+
+    console.log("WitnessCalculatorBuilder start");
+    const wc = await reactNativeCircom_runtime.WitnessCalculatorBuilder(wasm);
+
     const w = await wc.calculateBinWitness(input);
 
     const fdWtns = await binFileUtils.createBinFile(wtnsFileName, "wtns", 2, 2);
@@ -1115,6 +1164,23 @@ async function wtnsCalculate(input, wasmFileName, wtnsFileName, options) {
     await writeBin(fdWtns, w, wc.prime);
     await fdWtns.close();
 
+}
+
+function get$1(url) {
+    return new Promise((accept, reject) => {
+        var req = new XMLHttpRequest();
+        req.open("GET", url, true);
+        req.responseType = "arraybuffer";
+
+        req.onload = function(event) {
+            var resp = req.response;
+            if(resp) {
+                accept(resp);
+            }
+        };
+
+        req.send(null);
+    });
 }
 
 /*
@@ -1162,7 +1228,7 @@ async function groth16FullProve(input, wasmFile, zkeyFileName, logger) {
     You should have received a copy of the GNU General Public License along with
     snarkjs. If not, see <https://www.gnu.org/licenses/>.
 */
-const {unstringifyBigInts} = ffjavascript.utils;
+const {unstringifyBigInts} = reactNativeFfjavascript.utils;
 
 async function groth16Verify(vk_verifier, publicSignals, proof, logger) {
 /*
@@ -1185,7 +1251,7 @@ async function groth16Verify(vk_verifier, publicSignals, proof, logger) {
     for (let i=0; i<publicSignals.length; i++) {
         const buffP = curve.G1.fromObject(vk_verifier.IC[i+1]);
         IC.set(buffP, i*curve.G1.F.n8*2);
-        ffjavascript.Scalar.toRprLE(w, curve.Fr.n8*i, publicSignals[i], curve.Fr.n8);
+        reactNativeFfjavascript.Scalar.toRprLE(w, curve.Fr.n8*i, publicSignals[i], curve.Fr.n8);
     }
 
     let cpub = await curve.G1.multiExpAffine(IC, w);
@@ -1313,7 +1379,7 @@ function hashToG2(curve, hash) {
         seed[i] = hashV.getUint32(i*4);
     }
 
-    const rng = new ffjavascript.ChaCha(seed);
+    const rng = new reactNativeFfjavascript.ChaCha(seed);
 
     const g2_sp = curve.G2.fromRng(rng);
 
@@ -1389,7 +1455,7 @@ async function writePTauHeader(fd, curve, power, ceremonyPower) {
     await fd.writeULE32(curve.F1.n64*8);
 
     const buff = new Uint8Array(curve.F1.n8);
-    ffjavascript.Scalar.toRprLE(buff, 0, curve.q, curve.F1.n8);
+    reactNativeFfjavascript.Scalar.toRprLE(buff, 0, curve.q, curve.F1.n8);
     await fd.write(buff);
     await fd.writeULE32(power);                    // power
     await fd.writeULE32(ceremonyPower);               // power
@@ -1410,7 +1476,7 @@ async function readPTauHeader(fd, sections) {
     fd.pos = sections[1][0].p;
     const n8 = await fd.readULE32();
     const buff = await fd.read(n8);
-    const q = ffjavascript.Scalar.fromRprLE(buff);
+    const q = reactNativeFfjavascript.Scalar.fromRprLE(buff);
 
     const curve = await getCurveFromQ(q);
 
@@ -2534,7 +2600,7 @@ async function verify(tauFilename, logger) {
             let buff_r = new Uint32Array(nPoints);
             let buffG;
 
-            let rng = new ffjavascript.ChaCha(seed);
+            let rng = new reactNativeFfjavascript.ChaCha(seed);
 
             if (logger) logger.debug(`Creating random numbers Powers${p}...`);
             for (let i=0; i<nPoints; i++) {
@@ -2549,7 +2615,7 @@ async function verify(tauFilename, logger) {
 
             if (logger) logger.debug(`reading points Powers${p}...`);
             await binFileUtils.startReadUniqueSection(fd, sections, tauSection);
-            buffG = new ffjavascript.BigBuffer(nPoints*sG);
+            buffG = new reactNativeFfjavascript.BigBuffer(nPoints*sG);
             if (p == power+1) {
                 await fd.readToBuffer(buffG, 0, (nPoints-1)*sG);
                 buffG.set(curve.G1.zeroAffine, (nPoints-1)*sG);
@@ -2560,9 +2626,9 @@ async function verify(tauFilename, logger) {
 
             const resTau = await G.multiExpAffine(buffG, buff_r, logger, sectionName + "_" + p);
 
-            buff_r = new ffjavascript.BigBuffer(nPoints * n8r);
+            buff_r = new reactNativeFfjavascript.BigBuffer(nPoints * n8r);
 
-            rng = new ffjavascript.ChaCha(seed);
+            rng = new reactNativeFfjavascript.ChaCha(seed);
 
             const buff4 = new Uint8Array(4);
             const buff4V = new DataView(buff4.buffer);
@@ -3199,7 +3265,7 @@ async function preparePhase2(oldPtauFilename, newPTauFilename, logger) {
             const sGmid = G.F.n8*3;
 
             let buff;
-            buff = new ffjavascript.BigBuffer(nPoints*sGin);
+            buff = new reactNativeFfjavascript.BigBuffer(nPoints*sGin);
 
             await binFileUtils.startReadUniqueSection(fdOld, sections, oldSectionId);
             if ((oldSectionId == 2)&&(p==power+1)) {
@@ -3404,7 +3470,7 @@ async function convert(oldPtauFilename, newPTauFilename, logger) {
             const sGin = G.F.n8*2;
 
             let buff;
-            buff = new ffjavascript.BigBuffer(nPoints*sGin);
+            buff = new reactNativeFfjavascript.BigBuffer(nPoints*sGin);
 
             await binFileUtils.startReadUniqueSection(fdOld, sections, oldSectionId);
             if ((oldSectionId == 2)&&(p==power+1)) {
@@ -3658,19 +3724,19 @@ function r1csPrint(r1cs, syms, logger) {
     along with snarkJS. If not, see <https://www.gnu.org/licenses/>.
 */
 
-const bls12381r$1 = ffjavascript.Scalar.e("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", 16);
-const bn128r$1 = ffjavascript.Scalar.e("21888242871839275222246405745257275088548364400416034343698204186575808495617");
+const bls12381r$1 = reactNativeFfjavascript.Scalar.e("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", 16);
+const bn128r$1 = reactNativeFfjavascript.Scalar.e("21888242871839275222246405745257275088548364400416034343698204186575808495617");
 
 async function r1csInfo(r1csName, logger) {
 
     const cir = await r1csfile.readR1cs(r1csName);
 
-    if (ffjavascript.Scalar.eq(cir.prime, bn128r$1)) {
+    if (reactNativeFfjavascript.Scalar.eq(cir.prime, bn128r$1)) {
         if (logger) logger.info("Curve: bn-128");
-    } else if (ffjavascript.Scalar.eq(cir.prime, bls12381r$1)) {
+    } else if (reactNativeFfjavascript.Scalar.eq(cir.prime, bls12381r$1)) {
         if (logger) logger.info("Curve: bls12-381");
     } else {
-        if (logger) logger.info(`Unknown Curve. Prime: ${ffjavascript.Scalar.toString(cir.prime)}`);
+        if (logger) logger.info(`Unknown Curve. Prime: ${reactNativeFfjavascript.Scalar.toString(cir.prime)}`);
     }
     if (logger) logger.info(`# of Wires: ${cir.nVars}`);
     if (logger) logger.info(`# of Constraints: ${cir.nConstraints}`);
@@ -3863,7 +3929,7 @@ async function wtnsDebug(input, wasmFileName, wtnsFileName, symName, options, lo
     }
     wcOps.sym = sym;
 
-    const wc = await circom_runtime.WitnessCalculatorBuilder(wasm, wcOps);
+    const wc = await reactNativeCircom_runtime.WitnessCalculatorBuilder(wasm, wcOps);
     const w = await wc.calculateWitness(input);
 
     const fdWtns = await binFileUtils.createBinFile(wtnsFileName, "wtns", 2, 2);
@@ -4093,12 +4159,12 @@ async function newZKey(r1csName, ptauName, zkeyName, logger) {
 
     await binFileUtils.startWriteSection(fdZKey, 2);
     const primeQ = curve.q;
-    const n8q = (Math.floor( (ffjavascript.Scalar.bitLength(primeQ) - 1) / 64) +1)*8;
+    const n8q = (Math.floor( (reactNativeFfjavascript.Scalar.bitLength(primeQ) - 1) / 64) +1)*8;
 
     const primeR = curve.r;
-    const n8r = (Math.floor( (ffjavascript.Scalar.bitLength(primeR) - 1) / 64) +1)*8;
-    const Rr = ffjavascript.Scalar.mod(ffjavascript.Scalar.shl(1, n8r*8), primeR);
-    const R2r = curve.Fr.e(ffjavascript.Scalar.mod(ffjavascript.Scalar.mul(Rr,Rr), primeR));
+    const n8r = (Math.floor( (reactNativeFfjavascript.Scalar.bitLength(primeR) - 1) / 64) +1)*8;
+    const Rr = reactNativeFfjavascript.Scalar.mod(reactNativeFfjavascript.Scalar.shl(1, n8r*8), primeR);
+    const R2r = curve.Fr.e(reactNativeFfjavascript.Scalar.mod(reactNativeFfjavascript.Scalar.mul(Rr,Rr), primeR));
 
     await fdZKey.writeULE32(n8q);
     await binFileUtils.writeBigInt(fdZKey, primeQ, n8q);
@@ -4192,7 +4258,7 @@ async function newZKey(r1csName, ptauName, zkeyName, logger) {
 
     async function writeHs() {
         await binFileUtils.startWriteSection(fdZKey, 9);
-        const buffOut = new ffjavascript.BigBuffer(domainSize*sG1);
+        const buffOut = new reactNativeFfjavascript.BigBuffer(domainSize*sG1);
         if (cirPower < curve.Fr.s) {
             let sTauG1 = await binFileUtils.readSection(fdPTau, sectionsPTau, 12, (domainSize*2-1)*sG1, domainSize*2*sG1);
             for (let i=0; i< domainSize; i++) {
@@ -4313,7 +4379,7 @@ async function newZKey(r1csName, ptauName, zkeyName, logger) {
 
         await binFileUtils.startWriteSection(fdZKey, 4);
 
-        const buffSection = new ffjavascript.BigBuffer(coefs.length*(12+curve.Fr.n8) + 4);
+        const buffSection = new reactNativeFfjavascript.BigBuffer(coefs.length*(12+curve.Fr.n8) + 4);
 
         const buff4 = new Uint8Array(4);
         const buff4V = new DataView(buff4.buffer);
@@ -4414,8 +4480,8 @@ async function newZKey(r1csName, ptauName, zkeyName, logger) {
         for (let i=0; i<arr.length; i++) acc += arr[i] ? arr[i].length : 0;
         let bBases, bScalars;
         if (acc> 2<<14) {
-            bBases = new ffjavascript.BigBuffer(acc*sGin);
-            bScalars = new ffjavascript.BigBuffer(acc*curve.Fr.n8);
+            bBases = new reactNativeFfjavascript.BigBuffer(acc*sGin);
+            bScalars = new reactNativeFfjavascript.BigBuffer(acc*curve.Fr.n8);
         } else {
             bBases = new Uint8Array(acc*sGin);
             bScalars = new Uint8Array(acc*curve.Fr.n8);
@@ -5045,8 +5111,8 @@ async function phase2verifyFromInit(initFileName, pTauFileName, zkeyFileName, lo
         throw new Error("zkeyinit file is not groth16");
     }
 
-    if (  (!ffjavascript.Scalar.eq(zkeyInit.q, zkey.q))
-        ||(!ffjavascript.Scalar.eq(zkeyInit.r, zkey.r))
+    if (  (!reactNativeFfjavascript.Scalar.eq(zkeyInit.q, zkey.q))
+        ||(!reactNativeFfjavascript.Scalar.eq(zkeyInit.r, zkey.r))
         ||(zkeyInit.n8q != zkey.n8q)
         ||(zkeyInit.n8r != zkey.n8r))
     {
@@ -5218,13 +5284,13 @@ async function phase2verifyFromInit(initFileName, pTauFileName, zkeyFileName, lo
 
         const {fd: fdPTau, sections: sectionsPTau} = await binFileUtils.readBinFile(pTauFileName, "ptau", 1);
 
-        let buff_r = new ffjavascript.BigBuffer(zkey.domainSize * zkey.n8r);
+        let buff_r = new reactNativeFfjavascript.BigBuffer(zkey.domainSize * zkey.n8r);
 
         const seed= new Array(8);
         for (let i=0; i<8; i++) {
             seed[i] = crypto__default['default'].randomBytes(4).readUInt32BE(0, true);
         }
-        const rng = new ffjavascript.ChaCha(seed);
+        const rng = new reactNativeFfjavascript.ChaCha(seed);
         for (let i=0; i<zkey.domainSize-1; i++) {   // Note that last one is zero
             const e = Fr.fromRng(rng);
             Fr.toRprLE(buff_r, i*zkey.n8r, e);
@@ -5812,7 +5878,7 @@ async function bellmanContribute(curve, challengeFilename, responesFileName, ent
     You should have received a copy of the GNU General Public License
     along with snarkJS. If not, see <https://www.gnu.org/licenses/>.
 */
-const {stringifyBigInts: stringifyBigInts$2} = ffjavascript.utils;
+const {stringifyBigInts: stringifyBigInts$2} = reactNativeFfjavascript.utils;
 
 async function zkeyExportVerificationKey(zkeyName, /* logger */ ) {
 
@@ -6020,7 +6086,7 @@ async function plonkSetup(r1csName, ptauName, zkeyName, logger) {
     }
 
 
-    const LPoints = new ffjavascript.BigBuffer(domainSize*sG1);
+    const LPoints = new reactNativeFfjavascript.BigBuffer(domainSize*sG1);
     const o = sectionsPTau[12][0].p + ((2 ** (cirPower)) -1)*sG1;
     await fdPTau.readToBuffer(LPoints, 0, domainSize*sG1, o);
 
@@ -6045,7 +6111,7 @@ async function plonkSetup(r1csName, ptauName, zkeyName, logger) {
     ////////////
 
     await binFileUtils.startWriteSection(fdZKey, 14);
-    const buffOut = new ffjavascript.BigBuffer((domainSize+6)*sG1);
+    const buffOut = new reactNativeFfjavascript.BigBuffer((domainSize+6)*sG1);
     await fdPTau.readToBuffer(buffOut, 0, (domainSize+6)*sG1, sectionsPTau[2][0].p);
     await fdZKey.write(buffOut);
     await binFileUtils.endWriteSection(fdZKey);
@@ -6172,7 +6238,7 @@ async function plonkSetup(r1csName, ptauName, zkeyName, logger) {
     }
 
     async function writeQMap(sectionNum, posConstraint, name) {
-        let Q = new ffjavascript.BigBuffer(domainSize*n8r);
+        let Q = new reactNativeFfjavascript.BigBuffer(domainSize*n8r);
         for (let i=0; i<plonkConstraints.length; i++) {
             Q.set(plonkConstraints[i][posConstraint], i*n8r);
             if ((logger)&&(i%1000000 == 0)) logger.debug(`writing ${name}: ${i}/${plonkConstraints.length}`);
@@ -6186,7 +6252,7 @@ async function plonkSetup(r1csName, ptauName, zkeyName, logger) {
 
     async function writeP4(buff) {
         const q = await Fr.ifft(buff);
-        const q4 = new ffjavascript.BigBuffer(domainSize*n8r*4);
+        const q4 = new reactNativeFfjavascript.BigBuffer(domainSize*n8r*4);
         q4.set(q, 0);
         const Q4 = await Fr.fft(q4);
         await fdZKey.write(q);
@@ -6213,7 +6279,7 @@ async function plonkSetup(r1csName, ptauName, zkeyName, logger) {
     }
 
     async function writeSigma(sectionNum, name) {
-        const sigma = new ffjavascript.BigBuffer(n8r*domainSize*3);
+        const sigma = new reactNativeFfjavascript.BigBuffer(n8r*domainSize*3);
         const lastAparence =  new BigArray(plonkNVars);
         const firstPos = new BigArray(plonkNVars);
         let w = Fr.one;
@@ -6277,7 +6343,7 @@ async function plonkSetup(r1csName, ptauName, zkeyName, logger) {
         await binFileUtils.startWriteSection(fdZKey, sectionNum);
         const l=Math.max(nPublic, 1);
         for (let i=0; i<l; i++) {
-            let buff = new ffjavascript.BigBuffer(domainSize*n8r);
+            let buff = new reactNativeFfjavascript.BigBuffer(domainSize*n8r);
             buff.set(Fr.one, i*n8r);
             await writeP4(buff);
             if (logger) logger.debug(`writing ${name} ${i}/${l}`);
@@ -6298,10 +6364,10 @@ async function plonkSetup(r1csName, ptauName, zkeyName, logger) {
 
         await binFileUtils.startWriteSection(fdZKey, 2);
         const primeQ = curve.q;
-        const n8q = (Math.floor( (ffjavascript.Scalar.bitLength(primeQ) - 1) / 64) +1)*8;
+        const n8q = (Math.floor( (reactNativeFfjavascript.Scalar.bitLength(primeQ) - 1) / 64) +1)*8;
 
         const primeR = curve.r;
-        const n8r = (Math.floor( (ffjavascript.Scalar.bitLength(primeR) - 1) / 64) +1)*8;
+        const n8r = (Math.floor( (reactNativeFfjavascript.Scalar.bitLength(primeR) - 1) / 64) +1)*8;
 
         await fdZKey.writeULE32(n8q);
         await binFileUtils.writeBigInt(fdZKey, primeQ, n8q);
@@ -6374,7 +6440,7 @@ async function plonkSetup(r1csName, ptauName, zkeyName, logger) {
     You should have received a copy of the GNU General Public License along with
     snarkjs. If not, see <https://www.gnu.org/licenses/>.
 */
-const {stringifyBigInts: stringifyBigInts$3} = ffjavascript.utils;
+const {stringifyBigInts: stringifyBigInts$3} = reactNativeFfjavascript.utils;
 const { keccak256 } = jsSha3__default['default'];
 
 async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
@@ -6389,7 +6455,7 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
         throw new Error("zkey file is not groth16");
     }
 
-    if (!ffjavascript.Scalar.eq(zkey.r,  wtns.q)) {
+    if (!reactNativeFfjavascript.Scalar.eq(zkey.r,  wtns.q)) {
         throw new Error("Curve of the witness does not match the curve of the proving key");
     }
 
@@ -6407,7 +6473,7 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
     // First element in plonk is not used and can be any value. (But always the same).
     // We set it to zero to go faster in the exponentiations.
     buffWitness.set(Fr.zero, 0);
-    const buffInternalWitness = new ffjavascript.BigBuffer(n8r*zkey.nAdditions);
+    const buffInternalWitness = new reactNativeFfjavascript.BigBuffer(n8r*zkey.nAdditions);
 
     await calculateAdditions();
 
@@ -6416,7 +6482,7 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
     let pol_a,pol_b,pol_c, pol_z, pol_t, pol_r;
     let proof = {};
 
-    const sigmaBuff = new ffjavascript.BigBuffer(zkey.domainSize*n8r*4*3);
+    const sigmaBuff = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*n8r*4*3);
     let o = sectionsZKey[12][0].p + zkey.domainSize*n8r;
     await fdZKey.readToBuffer(sigmaBuff, 0 , zkey.domainSize*n8r*4, o);
     o += zkey.domainSize*n8r*5;
@@ -6424,10 +6490,10 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
     o += zkey.domainSize*n8r*5;
     await fdZKey.readToBuffer(sigmaBuff, zkey.domainSize*n8r*8 , zkey.domainSize*n8r*4, o);
 
-    const pol_s1 = new ffjavascript.BigBuffer(zkey.domainSize*n8r);
+    const pol_s1 = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*n8r);
     await fdZKey.readToBuffer(pol_s1, 0 , zkey.domainSize*n8r, sectionsZKey[12][0].p);
 
-    const pol_s2 = new ffjavascript.BigBuffer(zkey.domainSize*n8r);
+    const pol_s2 = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*n8r);
     await fdZKey.readToBuffer(pol_s2, 0 , zkey.domainSize*n8r, sectionsZKey[12][0].p + 5*zkey.domainSize*n8r);
 
     const PTau = await binFileUtils.readSection(fdZKey, sectionsZKey, 14);
@@ -6456,7 +6522,7 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
 
     for (let i=1; i<= zkey.nPublic; i++) {
         const pub = buffWitness.slice(i*Fr.n8, i*Fr.n8+Fr.n8);
-        publicSignals.push(ffjavascript.Scalar.fromRprLE(pub));
+        publicSignals.push(reactNativeFfjavascript.Scalar.fromRprLE(pub));
     }
 
     proof.A = G1.toObject(proof.A);
@@ -6510,9 +6576,9 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
     }
 
     async function buildABC() {
-        let A = new ffjavascript.BigBuffer(zkey.domainSize * n8r);
-        let B = new ffjavascript.BigBuffer(zkey.domainSize * n8r);
-        let C = new ffjavascript.BigBuffer(zkey.domainSize * n8r);
+        let A = new reactNativeFfjavascript.BigBuffer(zkey.domainSize * n8r);
+        let B = new reactNativeFfjavascript.BigBuffer(zkey.domainSize * n8r);
+        let C = new reactNativeFfjavascript.BigBuffer(zkey.domainSize * n8r);
 
         const aMap = await binFileUtils.readSection(fdZKey, sectionsZKey, 4);
         const bMap = await binFileUtils.readSection(fdZKey, sectionsZKey, 5);
@@ -6583,8 +6649,8 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
         ch.gamma = hashToFr(transcript2);
         if (logger) logger.debug("gamma: " + Fr.toString(ch.gamma));
     
-        let numArr = new ffjavascript.BigBuffer(Fr.n8*zkey.domainSize);
-        let denArr = new ffjavascript.BigBuffer(Fr.n8*zkey.domainSize);
+        let numArr = new reactNativeFfjavascript.BigBuffer(Fr.n8*zkey.domainSize);
+        let denArr = new reactNativeFfjavascript.BigBuffer(Fr.n8*zkey.domainSize);
 
         numArr.set(Fr.one, 0);
         denArr.set(Fr.one, 0);
@@ -6677,23 +6743,23 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
         */
 
         if (logger) logger.debug("phse3: Reading QM4");    
-        const QM4 = new ffjavascript.BigBuffer(zkey.domainSize*4*n8r);
+        const QM4 = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*4*n8r);
         await fdZKey.readToBuffer(QM4, 0 , zkey.domainSize*n8r*4, sectionsZKey[7][0].p + zkey.domainSize*n8r);
 
         if (logger) logger.debug("phse3: Reading QL4");    
-        const QL4 = new ffjavascript.BigBuffer(zkey.domainSize*4*n8r);
+        const QL4 = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*4*n8r);
         await fdZKey.readToBuffer(QL4, 0 , zkey.domainSize*n8r*4, sectionsZKey[8][0].p + zkey.domainSize*n8r);
 
         if (logger) logger.debug("phse3: Reading QR4");    
-        const QR4 = new ffjavascript.BigBuffer(zkey.domainSize*4*n8r);
+        const QR4 = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*4*n8r);
         await fdZKey.readToBuffer(QR4, 0 , zkey.domainSize*n8r*4, sectionsZKey[9][0].p + zkey.domainSize*n8r);
 
         if (logger) logger.debug("phse3: Reading QO4");    
-        const QO4 = new ffjavascript.BigBuffer(zkey.domainSize*4*n8r);
+        const QO4 = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*4*n8r);
         await fdZKey.readToBuffer(QO4, 0 , zkey.domainSize*n8r*4, sectionsZKey[10][0].p + zkey.domainSize*n8r);
 
         if (logger) logger.debug("phse3: Reading QC4");    
-        const QC4 = new ffjavascript.BigBuffer(zkey.domainSize*4*n8r);
+        const QC4 = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*4*n8r);
         await fdZKey.readToBuffer(QC4, 0 , zkey.domainSize*n8r*4, sectionsZKey[11][0].p + zkey.domainSize*n8r);
 
         const lPols = await binFileUtils.readSection(fdZKey, sectionsZKey, 13);
@@ -6727,8 +6793,8 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
             Fr.sub(Fr.e(2), Fr.mul(Fr.e(2), Fr.w[2])),
         ];
 
-        const T = new ffjavascript.BigBuffer(zkey.domainSize*4*n8r);
-        const Tz = new ffjavascript.BigBuffer(zkey.domainSize*4*n8r);
+        const T = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*4*n8r);
+        const Tz = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*4*n8r);
 
         let w = Fr.one;
         for (let i=0; i<zkey.domainSize*4; i++) {
@@ -6949,22 +7015,22 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
     }
 
     async function round4() {
-        const pol_qm = new ffjavascript.BigBuffer(zkey.domainSize*n8r);
+        const pol_qm = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*n8r);
         await fdZKey.readToBuffer(pol_qm, 0 , zkey.domainSize*n8r, sectionsZKey[7][0].p);
 
-        const pol_ql = new ffjavascript.BigBuffer(zkey.domainSize*n8r);
+        const pol_ql = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*n8r);
         await fdZKey.readToBuffer(pol_ql, 0 , zkey.domainSize*n8r, sectionsZKey[8][0].p);
 
-        const pol_qr = new ffjavascript.BigBuffer(zkey.domainSize*n8r);
+        const pol_qr = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*n8r);
         await fdZKey.readToBuffer(pol_qr, 0 , zkey.domainSize*n8r, sectionsZKey[9][0].p);
 
-        const pol_qo = new ffjavascript.BigBuffer(zkey.domainSize*n8r);
+        const pol_qo = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*n8r);
         await fdZKey.readToBuffer(pol_qo, 0 , zkey.domainSize*n8r, sectionsZKey[10][0].p);
 
-        const pol_qc = new ffjavascript.BigBuffer(zkey.domainSize*n8r);
+        const pol_qc = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*n8r);
         await fdZKey.readToBuffer(pol_qc, 0 , zkey.domainSize*n8r, sectionsZKey[11][0].p);
 
-        const pol_s3 = new ffjavascript.BigBuffer(zkey.domainSize*n8r);
+        const pol_s3 = new reactNativeFfjavascript.BigBuffer(zkey.domainSize*n8r);
         await fdZKey.readToBuffer(pol_s3, 0 , zkey.domainSize*n8r, sectionsZKey[12][0].p + 10*zkey.domainSize*n8r);
 
         const transcript4 = new Uint8Array(G1.F.n8*2*3);
@@ -7025,7 +7091,7 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
         const coefs3 = e3;
         const coefz = Fr.add(e2, e4);
 
-        pol_r = new ffjavascript.BigBuffer((zkey.domainSize+3)*n8r);
+        pol_r = new reactNativeFfjavascript.BigBuffer((zkey.domainSize+3)*n8r);
 
         for (let i = 0; i<zkey.domainSize+3; i++) {
             let v = Fr.mul(coefz, pol_z.slice(i*n8r,(i+1)*n8r));
@@ -7058,7 +7124,7 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
 
         for (let i=2; i<=6; i++ ) ch.v[i] = Fr.mul(ch.v[i-1], ch.v[1]);
         
-        let pol_wxi = new ffjavascript.BigBuffer((zkey.domainSize+6)*n8r);
+        let pol_wxi = new reactNativeFfjavascript.BigBuffer((zkey.domainSize+6)*n8r);
 
         const xi2m = Fr.mul(ch.xim, ch.xim);
 
@@ -7100,7 +7166,7 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
 
         proof.Wxi = await expTau(pol_wxi, "multiexp Wxi");
 
-        let pol_wxiw = new ffjavascript.BigBuffer((zkey.domainSize+3)*n8r);
+        let pol_wxiw = new reactNativeFfjavascript.BigBuffer((zkey.domainSize+3)*n8r);
         for (let i=0; i<zkey.domainSize+3; i++) {
             const w = pol_z.slice(i*n8r, (i+1)*n8r);
             pol_wxiw.set(w, i*n8r);
@@ -7114,7 +7180,7 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
     }
 
     function hashToFr(transcript) {
-        const v = ffjavascript.Scalar.fromRprBE(new Uint8Array(keccak256.arrayBuffer(transcript)));
+        const v = reactNativeFfjavascript.Scalar.fromRprBE(new Uint8Array(keccak256.arrayBuffer(transcript)));
         return Fr.e(v);
     }
 
@@ -7131,7 +7197,7 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
 
     function divPol1(P, d) {
         const n = P.byteLength/n8r;
-        const res = new ffjavascript.BigBuffer(n*n8r);
+        const res = new reactNativeFfjavascript.BigBuffer(n*n8r);
         res.set(Fr.zero, (n-1) *n8r);
         res.set(P.slice((n-1)*n8r, n*n8r), (n-2)*n8r);
         for (let i=n-3; i>=0; i--) {
@@ -7171,10 +7237,10 @@ async function plonk16Prove(zkeyFileName, witnessFileName, logger) {
     async function to4T(A, pz) {
         pz = pz || []; 
         let a = await Fr.ifft(A);
-        const a4 = new ffjavascript.BigBuffer(n8r*zkey.domainSize*4);
+        const a4 = new reactNativeFfjavascript.BigBuffer(n8r*zkey.domainSize*4);
         a4.set(a, 0);
 
-        const a1 = new ffjavascript.BigBuffer(n8r*(zkey.domainSize + pz.length));
+        const a1 = new reactNativeFfjavascript.BigBuffer(n8r*(zkey.domainSize + pz.length));
         a1.set(a, 0);
         for (let i= 0; i<pz.length; i++) {
             a1.set(
@@ -7244,7 +7310,7 @@ async function plonkFullProve(input, wasmFile, zkeyFileName, logger) {
     You should have received a copy of the GNU General Public License along with
     snarkjs. If not, see <https://www.gnu.org/licenses/>.
 */
-const {unstringifyBigInts: unstringifyBigInts$1} = ffjavascript.utils;
+const {unstringifyBigInts: unstringifyBigInts$1} = reactNativeFfjavascript.utils;
 const { keccak256: keccak256$1 } = jsSha3__default['default'];
 
 
@@ -7456,7 +7522,7 @@ function calculateLagrangeEvaluations(curve, challanges, vk) {
 }
 
 function hashToFr(curve, transcript) {
-    const v = ffjavascript.Scalar.fromRprBE(new Uint8Array(keccak256$1.arrayBuffer(transcript)));
+    const v = reactNativeFfjavascript.Scalar.fromRprBE(new Uint8Array(keccak256$1.arrayBuffer(transcript)));
     return curve.Fr.e(v);
 }
 
