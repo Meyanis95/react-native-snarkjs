@@ -18,7 +18,7 @@
 */
 
 import * as zkeyUtils from "./zkey_utils.js";
-import * as binFileUtils from "@iden3/binfileutils";
+import * as binFileUtils from "react-native-binfileutils";
 import * as fastFile from "fastfile";
 import { getCurveFromQ as getCurve } from "./curves.js";
 import * as misc from "./misc.js";

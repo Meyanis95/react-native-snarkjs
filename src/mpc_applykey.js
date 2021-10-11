@@ -17,7 +17,7 @@
     along with snarkJS. If not, see <https://www.gnu.org/licenses/>.
 */
 
-import * as binFileUtils from "@iden3/binfileutils";
+import * as binFileUtils from "react-native-binfileutils";
 
 /*
     This function creates a new section in the fdTo file with id idSection.

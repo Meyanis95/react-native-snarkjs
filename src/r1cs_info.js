@@ -18,7 +18,7 @@
 */
 
 import { Scalar } from "react-native-ffjavascript";
-import { readR1cs }  from "r1csfile";
+import { readR1cs }  from "react-native-r1csfile";
 
 const bls12381r = Scalar.e("73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000001", 16);
 const bn128r = Scalar.e("21888242871839275222246405745257275088548364400416034343698204186575808495617");

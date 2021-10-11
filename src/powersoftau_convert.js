@@ -17,7 +17,7 @@
     along with snarkJS. If not, see <https://www.gnu.org/licenses/>.
 */
 
-import * as binFileUtils from "@iden3/binfileutils";
+import * as binFileUtils from "react-native-binfileutils";
 import * as utils from "./powersoftau_utils.js";
 import * as fastFile from "fastfile";
 import {BigBuffer} from "react-native-ffjavascript";

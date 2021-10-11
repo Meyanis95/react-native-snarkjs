@@ -20,7 +20,7 @@
 import * as fastFile from "fastfile";
 import { WitnessCalculatorBuilder } from "react-native-circom_runtime";
 import * as wtnsUtils from "./wtns_utils.js";
-import * as binFileUtils from "@iden3/binfileutils";
+import * as binFileUtils from "react-native-binfileutils";
 import loadSyms from "./loadsyms.js";
 
 export default async function wtnsDebug(input, wasmFileName, wtnsFileName, symName, options, logger) {

@@ -66,7 +66,7 @@ contributions(7)
  */
 
 import * as ptauUtils from "./powersoftau_utils.js";
-import * as binFileUtils from "@iden3/binfileutils";
+import * as binFileUtils from "react-native-binfileutils";
 import Blake2b from "blake2b-wasm";
 import * as misc from "./misc.js";
 

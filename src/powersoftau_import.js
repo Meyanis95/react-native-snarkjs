@@ -20,7 +20,7 @@
 import * as fastFile from "fastfile";
 import Blake2b from "blake2b-wasm";
 import * as utils from "./powersoftau_utils.js";
-import * as binFileUtils from "@iden3/binfileutils";
+import * as binFileUtils from "react-native-binfileutils";
 import * as misc from "./misc.js";
 
 export default async function importResponse(oldPtauFilename, contributionFilename, newPTauFilename, name, importPoints, logger) {

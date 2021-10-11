@@ -21,7 +21,7 @@ import Blake2b from "blake2b-wasm";
 import * as utils from "./powersoftau_utils.js";
 import * as keyPair from "./keypair.js";
 import crypto from "crypto";
-import * as binFileUtils from "@iden3/binfileutils";
+import * as binFileUtils from "react-native-binfileutils";
 import { ChaCha, BigBuffer } from "react-native-ffjavascript";
 import * as misc from "./misc.js";
 const sameRatio = misc.sameRatio;

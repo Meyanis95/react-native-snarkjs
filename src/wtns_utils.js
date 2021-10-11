@@ -19,7 +19,7 @@
 
 import { Scalar } from "react-native-ffjavascript";
 
-import * as binFileUtils from "@iden3/binfileutils";
+import * as binFileUtils from "react-native-binfileutils";
 
 
 export async function write(fd, witness, prime) {

@@ -17,7 +17,7 @@
     along with snarkJS. If not, see <https://www.gnu.org/licenses/>.
 */
 
-import {readR1cs}  from "r1csfile";
+import {readR1cs}  from "react-native-r1csfile";
 
 export function stringifyBigInts(Fr, o) {
     if (o instanceof Uint8Array)  {

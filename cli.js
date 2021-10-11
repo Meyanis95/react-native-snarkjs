@@ -21,7 +21,7 @@
 
 import fs from "fs";
 
-import {readR1cs} from "r1csfile";
+import {readR1cs} from "react-native-r1csfile";
 
 import loadSyms from "./src/loadsyms.js";
 import * as r1cs from "./src/r1cs.js";

@@ -17,7 +17,7 @@
     along with snarkJS. If not, see <https://www.gnu.org/licenses/>.
 */
 
-import {readR1csHeader} from "r1csfile";
+import {readR1csHeader} from "react-native-r1csfile";
 import * as utils from "./powersoftau_utils.js";
 import {
     readBinFile,
@@ -26,7 +26,7 @@ import {
     writeBigInt,
     startWriteSection,
     endWriteSection,
-} from "@iden3/binfileutils";
+} from "react-native-binfileutils";
 import { log2, formatHash } from "./misc.js";
 import { Scalar, BigBuffer } from "react-native-ffjavascript";
 import Blake2b from "blake2b-wasm";

@@ -17,7 +17,7 @@
     along with snarkJS. If not, see <https://www.gnu.org/licenses/>.
 */
 
-import * as binFileUtils from "@iden3/binfileutils";
+import * as binFileUtils from "react-native-binfileutils";
 import * as utils from "./powersoftau_utils.js";
 
 export default async function truncate(ptauFilename, template, logger) {

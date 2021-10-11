@@ -19,7 +19,7 @@
 
 /* Implementation of this paper: https://eprint.iacr.org/2019/953.pdf section 8.4 */
 
-import * as binFileUtils from "@iden3/binfileutils";
+import * as binFileUtils from "react-native-binfileutils";
 import * as zkeyUtils from "./zkey_utils.js";
 import * as wtnsUtils from "./wtns_utils.js";
 import { getCurveFromQ as getCurve } from "./curves.js";

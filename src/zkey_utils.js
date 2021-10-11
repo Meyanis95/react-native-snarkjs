@@ -45,7 +45,7 @@
 // Contributions(10)
 
 import { Scalar, F1Field } from "react-native-ffjavascript";
-import * as binFileUtils from "@iden3/binfileutils";
+import * as binFileUtils from "react-native-binfileutils";
 
 import { getCurveFromQ as getCurve } from "./curves.js";
 import { log2 } from "./misc.js";
