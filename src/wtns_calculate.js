@@ -22,61 +22,66 @@ import { WitnessCalculatorBuilder } from "react-native-circom_runtime";
 import * as wtnsUtils from "./wtns_utils.js";
 import * as binFileUtils from "react-native-binfileutils";
 
-export default async function wtnsCalculate(input, wasmFileName, wtnsFileName, options) {
+export default async function wtnsCalculate(
+  input,
+  wasmFileName,
+  wtnsFileName,
+  options
+) {
+  console.log("wtnsCalculate");
 
-
-    console.log("wtnsCalculate")
-
-    const wasmFileBuff = await get(wasmFileName).then( function(res) {
-        return res
-    }).then(function (ab) {
-        return new Uint8Array(ab);
-    }).catch(err => {
-        console.log("err wtnsCalculate")
-        console.log(err)
+  const wasmFileBuff = await get(wasmFileName)
+    .then(function (res) {
+      return res;
+    })
+    .then(function (ab) {
+      return new Uint8Array(ab);
+    })
+    .catch((err) => {
+      console.log("err wtnsCalculate");
+      console.log(err);
     });
-    const o = {
-        type: "mem",
-        data: wasmFileBuff
-    };
-    const fdWasm = await fastFile.readExisting(o);
-    const wasm = await fdWasm.read(fdWasm.totalSize);
+  const o = {
+    type: "mem",
+    data: wasmFileBuff,
+  };
+  const fdWasm = await fastFile.readExisting(o);
+  const wasm = await fdWasm.read(fdWasm.totalSize);
 
-    console.log("WitnessCalculatorBuilder start")
-    const wc = await WitnessCalculatorBuilder(wasm);
+  console.log("WitnessCalculatorBuilder start");
+  const wc = await WitnessCalculatorBuilder(wasm);
 
-    const w = await wc.calculateBinWitness(input);
+  const w = await wc.calculateBinWitness(input);
 
-    const fdWtns = await binFileUtils.createBinFile(wtnsFileName, "wtns", 2, 2);
+  const fdWtns = await binFileUtils.createBinFile(wtnsFileName, "wtns", 2, 2);
 
-    await wtnsUtils.writeBin(fdWtns, w, wc.prime);
-    await fdWtns.close();
-
+  await wtnsUtils.writeBin(fdWtns, w, wc.prime);
+  await fdWtns.close();
 }
 
 export function readExisting(o) {
-    const fd = new MemFile();
-    fd.o = o;
-    fd.allocSize = o.data.byteLength;
-    fd.totalSize = o.data.byteLength;
-    fd.readOnly = true;
-    fd.pos = 0;
-    return fd;
+  const fd = new MemFile();
+  fd.o = o;
+  fd.allocSize = o.data.byteLength;
+  fd.totalSize = o.data.byteLength;
+  fd.readOnly = true;
+  fd.pos = 0;
+  return fd;
 }
 
 export function get(url) {
-    return new Promise((accept, reject) => {
-        var req = new XMLHttpRequest();
-        req.open("GET", url, true);
-        req.responseType = "arraybuffer";
+  return new Promise((accept, reject) => {
+    var req = new XMLHttpRequest();
+    req.open("GET", url, true);
+    req.responseType = "arraybuffer";
 
-        req.onload = function(event) {
-            var resp = req.response;
-            if(resp) {
-                accept(resp);
-            }
-        };
+    req.onload = function (event) {
+      var resp = req.response;
+      if (resp) {
+        accept(resp);
+      }
+    };
 
-        req.send(null);
-    });
+    req.send(null);
+  });
 }
